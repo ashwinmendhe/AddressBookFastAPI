@@ -1,43 +1,53 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from . import models, schemas, crud
 from .database import engine, Base, get_db
+from .schemas import AddressCreate, AddressResponse, AddressUpdate
+from .crud import get_all_adresses, get_addresses, create_address, update_new_address, delete_address, get_addresses_within_radius
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Address Book API")
 
-@app.post("/addresses/", response_model=schemas.AddressResponse)
-def create_address(address: schemas.AddressCreate, db: Session = Depends(get_db)):
-    return crud.create_address(db, address)
 
-@app.get("/addresses/", response_model=List[schemas.AddressResponse])
+@app.post("/addresses/", response_model=AddressResponse)
+def create_new_address(address: AddressCreate, db: Session = Depends(get_db)):
+    return create_address(db, address)
+
+
+@app.get("/addresses/",response_model = List[AddressResponse])
 def list_addresses(db: Session = Depends(get_db)):
-    return crud.get_all_addresses(db)
+    return get_all_adresses(db)
 
-@app.get("/addresses/{address_id}", response_model=schemas.AddressResponse)
-def get_address(address_id: int, db: Session = Depends(get_db)):
-    db_address = crud.get_address(db, address_id)
+@app.get("/addresses/{address_id}", response_model=AddressResponse)
+def get_address(address_id:int, db: Session = Depends(get_db)):
+    db_address = get_addresses(db, address_id)
     if not db_address:
-        raise HTTPException(status_code=404, detail="Address not found")
-    return db_address
+        raise HTTPException(status_code=404, detail="Address id not found in db")
+    else:
+        return db_address
 
-@app.put("/addresses/{address_id}", response_model=schemas.AddressResponse)
-def update_address(address_id: int, address: schemas.AddressUpdate, db: Session = Depends(get_db)):
-    updated = crud.update_address(db, address_id, address)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Address not found")
-    return updated
+
+@app.put("/addresses/{address_id}", response_model=AddressResponse)
+def update_addressDB(address_id: int, update_address: AddressUpdate, db: Session=Depends(get_db)):
+    updated = update_new_address(db, address_id, update_address)
+    if updated is not None:
+        return updated
+    else:
+        raise HTTPException(status_code=404, detail="Address id not found in db")
+
 
 @app.delete("/addresses/{address_id}")
-def delete_address(address_id: int, db: Session = Depends(get_db)):
-    success = crud.delete_address(db, address_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Address not found")
-    return {"message": "Address deleted successfully"}
+def delete_add(address_id:int, db: Session = Depends(get_db)):
+    result = delete_address(db, address_id)
+    if result is not None:
+        return result
+    else:
+        raise HTTPException(status_code=404, detail="Address id not found in db")
 
-@app.get("/addresses/nearby/", response_model=List[schemas.AddressResponse])
-def get_nearby_addresses(lat: float, lon: float, radius_km: float, db: Session = Depends(get_db)):
-    results = crud.get_addresses_within_radius(db, lat, lon, radius_km)
+
+
+@app.get("/addresses/nearby/", response_model=List[AddressResponse])
+def get_nearby_addresses(lat: float, lon:float, radius_km: float, db: Session = Depends(get_db)):
+    results = get_addresses_within_radius(db, lat, lon, radius_km)
     return results
