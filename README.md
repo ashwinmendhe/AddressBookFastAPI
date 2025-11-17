@@ -28,12 +28,12 @@ git clone https://github.com/ashwinmendhe/AddressBookFastAPI.git
 cd AddressBookFastAPI
 
 # 2 Create and activate virtual environment
-python3 -m venv venv
+python3.13 -m venv venv
 source venv/bin/activate   # (Linux/Mac)
 venv\Scripts\activate      # (Windows)
 
 # 3 Install dependencies
-pip install -r requirements.txt
+python3.13 -m pip install -r requirements.txt
 
 # 4 Run the application
 uvicorn app.main:app --reload
